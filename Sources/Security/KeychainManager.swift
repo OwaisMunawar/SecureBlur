@@ -72,20 +72,6 @@ public final class KeychainManager {
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
 
-        // Add Secure Enclave protection if available
-        if isSecureEnclaveAvailable() {
-            // Use biometry-protected access control
-            let accessControl = SecAccessControlCreateWithFlags(
-                nil,
-                kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-                .biometryCurrentSet,
-                nil
-            )
-            if let accessControl = accessControl {
-                query[kSecAttrAccessControl as String] = accessControl
-            }
-        }
-
         if let accessGroup = accessGroup {
             query[kSecAttrAccessGroup as String] = accessGroup
         }
