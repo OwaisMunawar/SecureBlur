@@ -19,6 +19,7 @@ struct BlurTestView: View {
     @State private var isProcessing = false
     @State private var processingTime: TimeInterval = 0
     @State private var showImagePicker = false
+    @State private var showFullscreen = false
     @State private var errorMessage: String?
 
     // MARK: - Properties
@@ -64,6 +65,9 @@ struct BlurTestView: View {
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showImagePicker) {
                 ImagePicker(image: $selectedImage)
+            }
+            .fullScreenCover(isPresented: $showFullscreen) {
+                FullscreenImageView(image: blurredImage, isPresented: $showFullscreen)
             }
             .onChange(of: selectedImage) { newImage in
                 if newImage != nil {
@@ -152,6 +156,11 @@ struct BlurTestView: View {
                     .frame(maxHeight: 300)
                     .cornerRadius(12)
                     .shadow(radius: 5)
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            showFullscreen = true
+                        }
+                    }
             } else if selectedImage != nil {
                 Text("Processing...")
                     .frame(height: 300)
@@ -264,6 +273,51 @@ struct ImagePicker: UIViewControllerRepresentable {
                         self.parent.image = image as? UIImage
                     }
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Fullscreen Image View
+
+struct FullscreenImageView: View {
+    let image: UIImage?
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            if let image = image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .transition(.scale.combined(with: .opacity))
+            }
+
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            isPresented = false
+                        }
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                    }
+                    .padding()
+                }
+                Spacer()
+            }
+        }
+        .onTapGesture {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                isPresented = false
             }
         }
     }
