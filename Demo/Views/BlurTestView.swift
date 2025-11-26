@@ -20,6 +20,7 @@ struct BlurTestView: View {
     @State private var processingTime: TimeInterval = 0
     @State private var showImagePicker = false
     @State private var showFullscreen = false
+    @State private var showMemoryInfo = false
     @State private var errorMessage: String?
 
     // MARK: - Properties
@@ -92,6 +93,8 @@ struct BlurTestView: View {
 
             if let image = selectedImage {
                 let info = ImageProcessor.imageInfo(for: image)
+                let isMemorySafe = info["isMemorySafe"] as? Bool ?? false
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Image Info:")
                         .font(.caption.bold())
@@ -99,14 +102,31 @@ struct BlurTestView: View {
                         .font(.caption)
                     Text("Memory: \(info["memoryFormatted"] as? String ?? "N/A")")
                         .font(.caption)
-                    Text("Memory Safe: \(info["isMemorySafe"] as? Bool ?? false ? "Yes" : "No")")
+
+                    HStack {
+                        Label(
+                            isMemorySafe ? "Memory Optimized" : "Auto-Optimized",
+                            systemImage: isMemorySafe ? "checkmark.circle.fill" : "bolt.circle.fill"
+                        )
                         .font(.caption)
-                        .foregroundColor((info["isMemorySafe"] as? Bool ?? false) ? .green : .orange)
+                        .foregroundColor(isMemorySafe ? .green : .orange)
+
+                        Button(action: { showMemoryInfo = true }) {
+                            Image(systemName: "info.circle")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
                 .background(Color.gray.opacity(0.1))
                 .cornerRadius(8)
+                .alert("Memory Optimization", isPresented: $showMemoryInfo) {
+                    Button("Got it", role: .cancel) { }
+                } message: {
+                    Text(memoryInfoMessage(for: image))
+                }
             }
         }
     }
@@ -209,6 +229,32 @@ struct BlurTestView: View {
             case .failure(let error):
                 errorMessage = error.localizedDescription
             }
+        }
+    }
+
+    private func memoryInfoMessage(for image: UIImage) -> String {
+        let info = ImageProcessor.imageInfo(for: image)
+        let isMemorySafe = info["isMemorySafe"] as? Bool ?? false
+
+        if isMemorySafe {
+            return "Image size is optimal for processing. No downsampling needed."
+        } else {
+            let originalWidth = info["pixelWidth"] as? Int ?? 0
+            let originalHeight = info["pixelHeight"] as? Int ?? 0
+            let originalMemory = info["memoryFormatted"] as? String ?? "N/A"
+
+            let optimized = ImageProcessor.optimize(image)
+            let optimizedInfo = ImageProcessor.imageInfo(for: optimized)
+            let optimizedWidth = optimizedInfo["pixelWidth"] as? Int ?? 0
+            let optimizedHeight = optimizedInfo["pixelHeight"] as? Int ?? 0
+            let optimizedMemory = optimizedInfo["memoryFormatted"] as? String ?? "N/A"
+
+            return """
+            Original: \(originalWidth) × \(originalHeight) (\(originalMemory))
+            Optimized: \(optimizedWidth) × \(optimizedHeight) (\(optimizedMemory))
+
+            Large images are automatically downsampled to 4K for optimal performance.
+            """
         }
     }
 }
