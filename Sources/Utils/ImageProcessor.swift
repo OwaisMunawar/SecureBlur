@@ -35,9 +35,7 @@ public final class ImageProcessor {
         let pixelWidth = size.width * scale
         let pixelHeight = size.height * scale
 
-        // Check if downsam
-
-pling is needed
+        // Check if downsampling is needed
         guard pixelWidth > maxDimension || pixelHeight > maxDimension else {
             return image
         }
