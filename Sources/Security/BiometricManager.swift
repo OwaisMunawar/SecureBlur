@@ -45,30 +45,21 @@ public final class BiometricManager {
             return .none
         }
 
-        if #available(iOS 17.0, *) {
-            switch context.biometryType {
-            case .none:
-                return .none
-            case .touchID:
-                return .touchID
-            case .faceID:
-                return .faceID
-            case .opticID:
+        switch context.biometryType {
+        case .none:
+            return .none
+        case .touchID:
+            return .touchID
+        case .faceID:
+            return .faceID
+        case .opticID:
+            if #available(iOS 17.0, *) {
                 return .opticID
-            @unknown default:
+            } else {
                 return .none
             }
-        } else {
-            switch context.biometryType {
-            case .none:
-                return .none
-            case .touchID:
-                return .touchID
-            case .faceID:
-                return .faceID
-            @unknown default:
-                return .none
-            }
+        @unknown default:
+            return .none
         }
     }
 
@@ -165,7 +156,8 @@ public final class BiometricManager {
         case .biometryDisconnected:
             return SecureBlurError.biometricNotAvailable
 
-        @unknown default:
+        default:
+            // Handle any other cases including platform-specific ones
             return SecureBlurError.unknownError(error)
         }
     }

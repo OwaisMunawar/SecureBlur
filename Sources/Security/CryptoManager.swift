@@ -47,7 +47,7 @@ public final class CryptoManager {
         }
 
         // Generate random nonce (IV)
-        let nonce = try AES.GCM.Nonce()
+        let nonce = AES.GCM.Nonce()
 
         // Encrypt data using AES-GCM
         let sealedBox: AES.GCM.SealedBox

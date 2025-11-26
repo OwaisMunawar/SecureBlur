@@ -23,10 +23,10 @@ public final class BlurEngine {
     // MARK: - Initialization
 
     /// Creates a new blur engine
-    /// - Throws: SecureSecureBlurError.metalNotSupported if Metal is not available
+    /// - Throws: SecureBlurError.metalNotSupported if Metal is not available
     public init() throws {
         guard let device = MTLCreateSystemDefaultDevice() else {
-            throw SecureSecureBlurError.metalNotSupported
+            throw SecureBlurError.metalNotSupported
         }
 
         guard let commandQueue = device.makeCommandQueue() else {
