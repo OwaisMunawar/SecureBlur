@@ -17,7 +17,7 @@ let package = Package(
     targets: [
         .target(
             name: "SecureBlur",
-            path: "Sources/SecureBlur"
+            path: "Sources"
         ),
         .testTarget(
             name: "SecureBlurTests",

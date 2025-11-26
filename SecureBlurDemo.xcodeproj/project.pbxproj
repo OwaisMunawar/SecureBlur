@@ -44,7 +44,7 @@
 				A2000001 /* SecureBlurDemoApp.swift */,
 				A2000002 /* ContentView.swift */,
 			);
-			path = Demo/SecureBlurDemo;
+			path = Demo;
 			sourceTree = "<group>";
 		};
 		A6000003 /* Products */ = {
