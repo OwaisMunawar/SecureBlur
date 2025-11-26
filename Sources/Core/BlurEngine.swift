@@ -11,27 +11,6 @@ import Metal
 import MetalPerformanceShaders
 import CoreImage
 
-/// Errors that can occur during blur operations
-public enum BlurError: Error, LocalizedError {
-    case metalNotSupported
-    case imageConversionFailed
-    case textureCreationFailed
-    case blurOperationFailed
-
-    public var errorDescription: String? {
-        switch self {
-        case .metalNotSupported:
-            return "Metal is not supported on this device"
-        case .imageConversionFailed:
-            return "Failed to convert image to required format"
-        case .textureCreationFailed:
-            return "Failed to create Metal texture"
-        case .blurOperationFailed:
-            return "Blur operation failed"
-        }
-    }
-}
-
 /// High-performance GPU-based Gaussian blur engine
 public final class BlurEngine {
 
@@ -44,14 +23,14 @@ public final class BlurEngine {
     // MARK: - Initialization
 
     /// Creates a new blur engine
-    /// - Throws: BlurError.metalNotSupported if Metal is not available
+    /// - Throws: SecureSecureBlurError.metalNotSupported if Metal is not available
     public init() throws {
         guard let device = MTLCreateSystemDefaultDevice() else {
-            throw BlurError.metalNotSupported
+            throw SecureSecureBlurError.metalNotSupported
         }
 
         guard let commandQueue = device.makeCommandQueue() else {
-            throw BlurError.metalNotSupported
+            throw SecureBlurError.metalNotSupported
         }
 
         self.device = device
@@ -66,11 +45,11 @@ public final class BlurEngine {
     ///   - image: The input image to blur
     ///   - configuration: The blur configuration (default: medium)
     /// - Returns: The blurred image
-    /// - Throws: BlurError if the operation fails
+    /// - Throws: SecureBlurError if the operation fails
     public func blur(_ image: UIImage, configuration: BlurConfiguration = .medium) throws -> UIImage {
         // Convert UIImage to CIImage
         guard let inputCIImage = CIImage(image: image) else {
-            throw BlurError.imageConversionFailed
+            throw SecureBlurError.imageConversionFailed
         }
 
         // Apply Gaussian blur using Core Image (which uses Metal under the hood)
@@ -78,7 +57,7 @@ public final class BlurEngine {
 
         // Render to UIImage
         guard let cgImage = ciContext.createCGImage(blurredCIImage, from: blurredCIImage.extent) else {
-            throw BlurError.blurOperationFailed
+            throw SecureBlurError.blurOperationFailed
         }
 
         return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
@@ -97,7 +76,7 @@ public final class BlurEngine {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else {
                 DispatchQueue.main.async {
-                    completion(.failure(BlurError.blurOperationFailed))
+                    completion(.failure(SecureBlurError.blurOperationFailed))
                 }
                 return
             }
@@ -120,7 +99,7 @@ public final class BlurEngine {
     ///   - image: The input image to blur
     ///   - configuration: The blur configuration (default: medium)
     /// - Returns: The blurred image
-    /// - Throws: BlurError if the operation fails
+    /// - Throws: SecureBlurError if the operation fails
     @available(iOS 15.0, *)
     public func blur(_ image: UIImage, configuration: BlurConfiguration = .medium) async throws -> UIImage {
         return try await withCheckedThrowingContinuation { continuation in

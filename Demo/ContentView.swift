@@ -9,7 +9,17 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        BlurTestView()
+        TabView {
+            BlurTestView()
+                .tabItem {
+                    Label("Blur", systemImage: "camera.filters")
+                }
+
+            SecurityTestView()
+                .tabItem {
+                    Label("Security", systemImage: "lock.shield")
+                }
+        }
     }
 }
 
