@@ -335,7 +335,7 @@ struct SecurityTestView: View {
     }
 
     private func decryptImage() {
-        guard var encrypted = encryptedImage else { return }
+        guard let encrypted = encryptedImage else { return }
 
         // Check biometric availability
         guard biometricManager.isBiometricAvailable() else {
