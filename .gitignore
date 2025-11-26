@@ -42,6 +42,11 @@ fastlane/test_output
 *.gcda
 *.gcno
 
+# Documentation
+*.md
+*.pdf
+*.html
+
 # Other
 .netrc
 *.swp
