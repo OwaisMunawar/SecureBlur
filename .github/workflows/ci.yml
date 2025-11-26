@@ -1,0 +1,177 @@
+name: SecureBlur CI
+
+on:
+  push:
+    branches: [ main, milestone-1, milestone-2, milestone-3 ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+env:
+  SCHEME: SecureBlur
+  FRAMEWORK_NAME: SecureBlur
+  IOS_VERSION: '17.0'
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: macos-14
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+
+    - name: Show Xcode version
+      run: xcodebuild -version
+
+    - name: Show available simulators
+      run: xcrun simctl list devices available
+
+    - name: Build for iOS Simulator
+      run: |
+        xcodebuild build \
+          -scheme "$SCHEME" \
+          -destination "platform=iOS Simulator,name=iPhone 15 Pro,OS=$IOS_VERSION" \
+          -configuration Debug \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          | xcbeautify || cat
+
+    - name: Run Unit Tests
+      run: |
+        xcodebuild test \
+          -scheme "$SCHEME" \
+          -destination "platform=iOS Simulator,name=iPhone 15 Pro,OS=$IOS_VERSION" \
+          -configuration Debug \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          | xcbeautify || cat
+
+    - name: Upload test results
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: |
+          ~/Library/Logs/DiagnosticReports/
+          ~/Library/Developer/Xcode/DerivedData/**/Logs/Test/
+
+  build-xcframework:
+    name: Build XCFramework
+    runs-on: macos-14
+    needs: build-and-test
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/milestone-3'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+
+    - name: Install xcbeautify
+      run: brew install xcbeautify
+
+    - name: Build XCFramework
+      run: |
+        chmod +x build-xcframework.sh
+        ./build-xcframework.sh
+
+    - name: Verify XCFramework
+      run: |
+        if [ ! -d "build/$FRAMEWORK_NAME.xcframework" ]; then
+          echo "Error: XCFramework not found"
+          exit 1
+        fi
+
+        echo "XCFramework contents:"
+        ls -lR "build/$FRAMEWORK_NAME.xcframework"
+
+        echo ""
+        echo "Framework architectures:"
+        find "build/$FRAMEWORK_NAME.xcframework" -name "$FRAMEWORK_NAME" -type f | while read framework_binary; do
+          echo "Binary: $framework_binary"
+          file "$framework_binary"
+          lipo -info "$framework_binary" || true
+          echo ""
+        done
+
+    - name: Calculate checksums
+      run: |
+        cd build
+        shasum -a 256 "$FRAMEWORK_NAME.xcframework.zip" > "$FRAMEWORK_NAME.xcframework.zip.sha256"
+        cat "$FRAMEWORK_NAME.xcframework.zip.sha256"
+
+    - name: Upload XCFramework artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SecureBlur-xcframework
+        path: |
+          build/SecureBlur.xcframework.zip
+          build/SecureBlur.xcframework.zip.sha256
+        retention-days: 30
+
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          build/SecureBlur.xcframework.zip
+          build/SecureBlur.xcframework.zip.sha256
+        body: |
+          # SecureBlur ${{ github.ref_name }}
+
+          ## Installation
+
+          Download `SecureBlur.xcframework.zip` and add it to your Xcode project.
+
+          ## Verification
+
+          Verify the download with SHA-256 checksum:
+          ```bash
+          shasum -a 256 -c SecureBlur.xcframework.zip.sha256
+          ```
+
+          ## What's Included
+
+          - iOS devices (arm64)
+          - iOS Simulator (arm64, x86_64)
+
+          ## Requirements
+
+          - iOS 16.0+
+          - Xcode 15.0+
+          - Swift 5.9+
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    name: Swift Lint
+    runs-on: macos-14
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check Swift format
+      run: |
+        # Basic Swift code style checks
+        echo "Checking for common Swift style issues..."
+
+        # Check for trailing whitespace
+        if grep -rn --include="*.swift" '[[:space:]]$' Sources Tests Demo; then
+          echo "Warning: Found trailing whitespace"
+        fi
+
+        # Check for tabs instead of spaces
+        if grep -rn --include="*.swift" $'\t' Sources Tests Demo; then
+          echo "Warning: Found tabs instead of spaces"
+        fi
+
+        echo "Basic lint checks completed"
